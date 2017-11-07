@@ -5,61 +5,49 @@
 #include <unistd.h>
 using namespace std;
 
-int getch() 
+ssize_t getpass (char **lineptr, size_t *n, FILE *stream)
 {
-    int ch;
-    struct termios t_old, t_new;
+    struct termios old, new;
+    int nread;
 
-    tcgetattr(STDIN_FILENO, &t_old);
-    t_new = t_old;
-    t_new.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &t_new);
+    /* Turn echoing off and fail if we can't. */
+    if (tcgetattr (fileno (stream), &old) != 0)
+        return -1;
+    new = old;
+    new.c_lflag &= ~ECHO;
+    if (tcsetattr (fileno (stream), TCSAFLUSH, &new) != 0)
+        return -1;
 
-    ch = getchar();
+    /* Read the password. */
+    nread = getline (lineptr, n, stream);
 
-    tcsetattr(STDIN_FILENO, TCSANOW, &t_old);
-    return ch;
+    /* Restore terminal. */
+    (void) tcsetattr (fileno (stream), TCSAFLUSH, &old);
+
+    return nread;
 }
 
-string getpass(const char *prompt, bool show_asterisk=true)
-{
-  const char BACKSPACE=127;
-  const char RETURN=10;
-
-  string password;
-  unsigned char ch=0;
-
-  cout << prompt << endl;
-
-  while((ch=getch())!=RETURN)
-  {
-    if (ch==BACKSPACE)
-    {
-      if(password.length()!=0)
-      {
-        if(show_asterisk)
-          cout << "\b \b";
-          password.resize(password.length()-1);
-      }
-    } //if ch==backspace
-    else 
-    {
-      password+=ch;
-      if(show_asterisk)
-        cout <<'*';
-    }
-  }
-  cout << endl;
-  return password;
-}
 
 void login()
 {
-  string username;
-  printf("login:\n");
-  printf("username: ");
-  cin >> username;
-  string password = getpass("password: ", true);
+	string username;
+	printf("login:\n");
+	printf("username: ");
+	cin >> username;
+	string password = getpass("password: ", true);
+	char pw[MAXPW] = {0};
+	char *p = pw;
+	FILE *fp = stdin;
+	ssize_t nchr = 0;
+
+	printf ( "\n Enter password: ");
+	nchr = getpasswd (&p, MAXPW, '*', fp);
+	printf ("\n you entered   : %s  (%zu chars)\n", p, nchr);
+
+	printf ( "\n Enter password: ");
+	nchr = getpasswd (&p, MAXPW, 0, fp);
+	printf ("\n you entered   : %s  (%zu chars)\n\n", p, nchr);
+
 }
 
 void registration()
@@ -67,23 +55,22 @@ void registration()
   printf("registration:\n");
 }
 
-
 int main() 
 {
-  int loginChoice;
-  printf("1: Login\n2: Register\n");
-  cin >> loginChoice;
+	int loginChoice;
+	printf("1: Login\n2: Register\n");
+	cin >> loginChoice;
 
-  if (loginChoice == 1)
-  {
-   login(); 
-  } else if (loginChoice == 2) 
-  {
-    registration();
-  } else 
-  {
-    printf("Enter a valid choice\n");
-  }
+	if (loginChoice == 1)
+	{
+		login(); 
+	} else if (loginChoice == 2) 
+	{
+		registration();
+	} else 
+	{
+		printf("Enter a valid choice\n");
+	}
 
 }
 
