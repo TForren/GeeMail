@@ -4,36 +4,23 @@
 #include <stdlib.h>
 #include <string>
 #include <sqlite3.h>
+#include <cstring>
 using namespace std;
 
-struct myData {
-  string A;
-  int B, C;
-};
-
-int exec_callback(void *ptr, int argc, char *argv[], char *names[])
-{
-  vector<myData> *list = reinterpret_cast<vector<myData> *>(ptr);
-  myData d;
-  d.A = argv[0] ? argv[0] : "";
-  d.B = atoi(argv[1]);
-  d.C = atoi(argv[2]);
-  list->push_back(d);
-  return 0;
+/*
+static int callback(void *data, int argc, char **argv, char **azColName){
+   int i;
+   fprintf(stderr, "%s: ", (const char*)data);
+   
+   for(i = 0; i<argc; i++){
+      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+   }
+   
+   printf("\n");
+   return 0;
 }
+*/
 
-void query_with_exec()
-{
-  vector<myData> list;
-  sqlite3 *db;
-  sqlite3_open("gee", &db);
-  char *errmsg = NULL;
-  sqlite3_exec(db, "SELECT a, b, c FROM SQList /* WHERE ... */", exec_callback, &list, &errmsg);
-  if (errmsg) {
-    printf("error: %s!\n", errmsg);
-    return;
-  }
-}
 
 void query_register(string username, string password ) 
 {
@@ -58,61 +45,100 @@ void query_register(string username, string password )
 
 void login()
 {
-	string username;
+  string username;
   string password;
-	printf("login\n");
-	printf("username: ");
-	cin >> username;
+  printf("login\n");
+  printf("username: ");
+  cin >> username;
   printf("password: ");
   cin >> password;
 }
 
-int verifyUsername(string username)
+int verifyUsernameReg(string username)
 {
-  sqlite3 *db;
-  sqlite3_stmt * stmt;
-  char *errmsg = NULL;
-  string query = "select from users where name = ('" + username + "');";
-  if (sqlite3_open("gee.db",&db) == SQLITE_OK)
-  {
-    sqlite3_prepare(db, query.c_str(), -1, &stmt, NULL ); 
-    sqlite3_step( stmt );
-    int id = sqlite3_column_int(stmt,0);
-    const unsigned char *text = sqlite3_column_text(stmt,1);
-    printf("%d  %s\n", id, text);
-    if (sqlite3_column_text(stmt,1) == NULL )
-    {
-      printf("not taken\n");
-    } else 
-    {
-      printf("taken\n");
-    }
-  } else {
-    cout << "failed to open db\n";
-  }
-  sqlite3_finalize(stmt);
-  sqlite3_close(db);
+	sqlite3 *db;
+	int rc;
+	rc = sqlite3_open("gee.db", &db);
+
+	if (rc != SQLITE_OK) {
+		fprintf(stderr, "failed to open database: %s\n", sqlite3_errmsg(db));
+		sqlite3_close(db);
+		return(1);
+	}
+	
+	const char *create_sql = ("select * from users where name = ?");
+	sqlite3_stmt *statement;
+
+	rc = sqlite3_prepare_v2(db, create_sql, -1, &statement, NULL);
+	rc = sqlite3_bind_text( statement, 1, username.c_str(), username.length(),SQLITE_STATIC);
+	
+	if (rc != SQLITE_OK) {
+		fprintf(stderr, "failed to prepare statement: %s\n", sqlite3_errmsg(db));
+		sqlite3_close(db);
+		return(1);
+	}
+
+	rc = sqlite3_step(statement);
+	//int id                    = sqlite3_column_int (statement, 0);
+	const unsigned char *name = sqlite3_column_text(statement, 1);
+	
+	if (rc == SQLITE_ERROR) {
+		fprintf(stderr, 
+				"failed to execute statement: %s\n", 
+				sqlite3_errmsg(db));
+	}
+
+	sqlite3_close(db);
+
+	if (name == NULL) {
+		//Not Taken
+		printf("username available\n");
+		return 0;
+	} else {
+		//Taken
+		//printf("username unavailable\n");
+		return 1;
+	}
 }
 
-int verifyPassword(string password)
+int verifyPasswordReg(string password)
 {
-
+	if (password.length() < 4) {
+		printf("password must be more than 4 characters\n");
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 void registration()
 {
   printf("registration:\n");
   string username, password;
+
+
+  //verify username  
   printf("Enter username: \n");
   cin >> username;
-  cin.clear();
-  cin.ignore(10000,'\n');
+  while (verifyUsernameReg(username)) {
+	cin.clear();
+	printf("Choose a different username: \n");
+	cin >> username;
+  }
+  //verify password
   printf("Enter password: \n");
   cin >> password;
+  while (verifyPasswordReg(password)) {
+	cin.clear();
+	printf("Choose a different password: \n");
+	cin >> password;
+  }
 
-  //verify credentials
-  verifyUsername(username);
-  //query_register(username,password);
+  if (!verifyUsernameReg(username) && !verifyPasswordReg(password)) {
+	query_register(username,password);
+  } else {
+	printf("invalid username or password\n");  
+  }
 }
 
 int main() 
