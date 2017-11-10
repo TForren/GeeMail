@@ -1,2 +1,2 @@
 all:
-	g++ GeeMail.cpp -lsqlite3
+	g++ GeeMail.cpp auth.cpp -lsqlite3
