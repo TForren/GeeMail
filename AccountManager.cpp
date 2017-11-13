@@ -11,15 +11,17 @@ struct message
 {
 	string owner;
 	string sender;
+	string title;
 	string messageText;
 	string passphrase;
 };
 
-message recordMessage(string owner, string sender, string messageText, string passphrase)
+message recordMessage(string owner, string sender, string titleText, string messageText, string passphrase)
 {
 	message mes;
 	mes.owner = owner;
 	mes.sender = sender;
+	mes.title = titleText;
 	mes.messageText = messageText;
 	mes.passphrase = passphrase;
 	return mes;
@@ -50,35 +52,19 @@ int AccountManager::getMessages(string owner)
 		sqlite3_close(db);
 		return(1);
 	}
-	/*
-	while (1) {
-		rc = sqlite3_step(statement);
-			if (rc == SQLITE_ROW) {
-				int owner;
-				int sender;
-				const unsigned char * message;
-				const unsigned char * passphrase;
-				owner = sqlite3_column_bytes(selectStmt, 0);
-				sender = sqlite3_column_bytes(selectStmt, 1);
-				message  = sqlite3_column_text(selectStmt, 2);
-				passphrase  = sqlite3_column_text(selectStmt, 3);
-			}
-			else if (s == SQLITE_DONE) {
-				break;
-			}
-	}	
-	*/
 	while (sqlite3_step(statement) == SQLITE_ROW) {
 		const unsigned char* owner;
 		const unsigned char* sender;
-		const unsigned char * message;
-		const unsigned char * passphrase;
+		const unsigned char* title;
+		const unsigned char* message;
+		const unsigned char* passphrase;
 		owner = sqlite3_column_text(statement, 0);
 		sender = sqlite3_column_text(statement, 1);
-		message  = sqlite3_column_text(statement, 2);
-		passphrase  = sqlite3_column_text(statement, 3);
+		title = sqlite3_column_text(statement, 2);
+		message  = sqlite3_column_text(statement, 3);
+		passphrase  = sqlite3_column_text(statement, 4);
 		
-		messagesVector.push_back(recordMessage((const char*)owner,(const char*)sender,(const char*)message,(const char*)passphrase));
+		messagesVector.push_back(recordMessage((const char*)owner,(const char*)sender,(const char*)title,(const char*)message,(const char*)passphrase));
 	}
 
 	if (rc == SQLITE_ERROR) {
@@ -93,11 +79,14 @@ int AccountManager::getMessages(string owner)
 void AccountManager::listMessages(string owner)
 {
 	getMessages(owner);
-	
-	for (int i = 0; i < messagesVector.size(); i++)
+	int messageCount = messagesVector.size();
+	printf("You have %d messages\n",messageCount);	
+	printf("#:	FROM:	Title:\n");
+	for (int i = 0; i < messageCount; i++)
 	{
-		printf("%d: %s\n",i,messagesVector[i].sender.c_str());
+		printf("%d:	%s	%s\n",i,messagesVector[i].sender.c_str(),messagesVector[i].title.c_str());
 	}
+	cout << endl;
 }
 
 void AccountManager::option_readMessages() 
@@ -113,6 +102,7 @@ void AccountManager::option_writeMessage()
 void AccountManager::promptOptions() 
 {
 	int actionChoice;
+	AccountManager::listMessages((const char*)mngr.currentAccount);
 	printf("1: Read Messages\n2: Write Messages\n");
 	cin >> actionChoice;
 

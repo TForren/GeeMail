@@ -144,7 +144,7 @@ int AuthCenter::verifyPasswordLogin(string username, string password)
 		return(1);
 	}
 	
-	const char *fetch_sql = ("select password,owner from users where name = ?");
+	const char *fetch_sql = ("select password,name from users where name = ?");
 	sqlite3_stmt *statement;
 
 	rc = sqlite3_prepare_v2(db, fetch_sql, -1, &statement, NULL);
