@@ -1,4 +1,4 @@
-#include "auth.h"
+#include "common.h"
 #include <iostream>
 #include <stdio.h>
 #include <vector>
@@ -9,7 +9,7 @@
 using namespace std;
 
 AuthCenter auth;
-accountManager mngr;
+AccountManager mngr;
 
 void registration()
 {
@@ -70,7 +70,9 @@ void login()
   if (!auth.verifyPasswordLogin(username, password))
   {
 	printf("Successful Login\n");
-	mngr.listMessages(
+	mngr.promptOptions();
+	//mngr.listMessages(mngr.currentAccount);
+	//printf("account #: %d\n",mngr.currentAccount);
   }  
 }
 

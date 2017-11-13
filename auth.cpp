@@ -1,4 +1,4 @@
-#include "auth.h"
+#include "common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -144,7 +144,7 @@ int AuthCenter::verifyPasswordLogin(string username, string password)
 		return(1);
 	}
 	
-	const char *fetch_sql = ("select password from users where name = ?");
+	const char *fetch_sql = ("select password,owner from users where name = ?");
 	sqlite3_stmt *statement;
 
 	rc = sqlite3_prepare_v2(db, fetch_sql, -1, &statement, NULL);
@@ -159,6 +159,7 @@ int AuthCenter::verifyPasswordLogin(string username, string password)
 
 	rc = sqlite3_step(statement);
 	const unsigned char *fetchedPass = sqlite3_column_text(statement, 0);
+	const unsigned char* owner = sqlite3_column_text(statement, 1);
 	
 	if (rc == SQLITE_ERROR) 
 	{
@@ -170,6 +171,7 @@ int AuthCenter::verifyPasswordLogin(string username, string password)
 	if ( strcmp((const char*)fetchedPass,(const char*)password.c_str()) == 0 ) 
 	{
 		//printf("Correct password\n");
+		mngr.currentAccount = owner;
 		return 0;
 	} else 
 	{
