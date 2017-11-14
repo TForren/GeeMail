@@ -12,4 +12,5 @@ class AccountManager
 		void option_writeMessage();
 		
 		int getMessages(string owner);
+		void revealMessage(string message);
 };
